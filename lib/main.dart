@@ -6,17 +6,33 @@ import 'fitness_cubit.dart';
 import 'profilescreen.dart';
 import 'datarepo.dart';
 import 'auth.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'login.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 import 'matchingscreen.dart';
 import 'settingscreen.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'package:awesome_notifications/awesome_notifications.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Supabase.initialize(
-    url: 'https://tjyckflwdlocmuhevryv.supabase.co/',
-    anonKey: '', // dodaj svoj kljuc ovde mrzi me jako da gledam kako sa env
-  );
+  
+  // Initialize date formatting for Serbian locale
+  await initializeDateFormatting('sr_RS', null);
+  try {
+    await Supabase.initialize(
+      url: 'https://tjyckflwdlocmuhevryv.supabase.co/',
+      anonKey: 'sb_publishable_pBhssx2LoSQ5CsSppdI1_w_cNkjtEpC', // add your key here or use env
+    ).timeout(const Duration(seconds: 6));
+  } catch (e, st) {
+    // If Supabase initialization fails or times out, log and continue so UI can load.
+    // This prevents the native splash screen from hanging indefinitely.
+    // Replace prints with proper logging if desired.
+    // ignore: avoid_print
+    print('Supabase.initialize failed or timed out: $e');
+    // ignore: avoid_print
+    print(st);
+  }
   AwesomeNotifications().initialize(
     null, // icon can be null for default
     [
@@ -27,20 +43,27 @@ void main() async {
         defaultColor: Colors.grey,
         ledColor: Colors.white,
         importance: NotificationImportance.High,
-      )
+      ),
     ],
   );
-final repo = DataRepository(); // Create the repo instance
-runApp(
-    MultiBlocProvider(
+  final repo = DataRepository(); // Create the repo instance
+  runApp(
+    MultiRepositoryProvider(
       providers: [
-        BlocProvider(create: (context) => AppCubit(repo)), // Pass repo here
-        BlocProvider(create: (context) => FitnessCubit(repo)),
-        BlocProvider(create: (context) => AuthCubit()),
+        RepositoryProvider<DataRepository>.value(value: repo),
       ],
-      child: const MyApp(),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (context) => AppCubit(repo)), // Pass repo here
+          BlocProvider(create: (context) => FitnessCubit(repo)),
+          BlocProvider(create: (context) => AuthCubit()),
+        ],
+        child: const MyApp(),
+      ),
     ),
-  );}
+  );
+}
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -53,7 +76,37 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: Colors.grey[300], // Light grey background
         primarySwatch: Colors.grey,
       ),
-      home: const MainFooterPage(),
+      home: const AuthWrapper(),
+    );
+  }
+}
+
+/// Wrapper that listens to auth state and shows Login or Main screen accordingly
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AuthCubit, AuthState>(
+      builder: (context, AuthState state) {
+        // Show loading indicator while checking session
+        if (state.isLoading && !state.isLoggedIn) {
+          return Scaffold(
+            backgroundColor: Colors.grey[300],
+            body: const Center(
+              child: CircularProgressIndicator(color: Colors.black),
+            ),
+          );
+        }
+
+        // Show login screen if not logged in
+        if (!state.isLoggedIn) {
+          return const LoginScreen();
+        }
+
+        // Show main app if logged in
+        return const MainFooterPage();
+      },
     );
   }
 }
@@ -70,10 +123,10 @@ class _MainFooterPageState extends State<MainFooterPage> {
 
   // The list of screens to swap between
   final List<Widget> _screens = [
-    const PlaceholderScreen(title: "Info Screen"),     // Index 0
-    const ProfileScreen(name: "Duši Viber", date: "2009.03.07."),  // Index 1
-    const HomeScreen(),                                // Index 2 (The Main UI)
-    const SearchScreen(),   // Index 3
+    const PlaceholderScreen(title: "Info Screen"), // Index 0
+    const ProfileScreen(name: "Duši Viber", date: "2009.03.07."), // Index 1
+    const HomeScreen(), // Index 2 (The Main UI)
+    const SearchScreen(), // Index 3
     const SettingsScreen(), // Index 4
   ];
 
@@ -81,36 +134,50 @@ class _MainFooterPageState extends State<MainFooterPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       // The body switches based on the index
-      body: SafeArea(
-        child: _screens[_currentIndex],
-      ),
+      body: SafeArea(child: _screens[_currentIndex]),
 
       // THE FOOTER (Bottom Navigation Bar)
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
         type: BottomNavigationBarType.fixed, // Needed for 4+ items
-        backgroundColor: Colors.grey[400],   // Darker grey for footer
-        selectedItemColor: Colors.black,     // Active icon color
+        backgroundColor: Colors.grey[400], // Darker grey for footer
+        selectedItemColor: Colors.black, // Active icon color
         unselectedItemColor: Colors.black54, // Inactive icon color
-        showSelectedLabels: false,           // Hiding labels to match image
+        showSelectedLabels: false, // Hiding labels to match image
         showUnselectedLabels: false,
         items: const [
           // 1. Info
-          BottomNavigationBarItem(icon: Icon(Icons.info_outline, size: 28), label: 'Info'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.info_outline, size: 28),
+            label: 'Info',
+          ),
           // 2. Profile
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline, size: 28), label: 'Profile'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline, size: 28),
+            label: 'Profile',
+          ),
           // 3. Home (Active)
-          BottomNavigationBarItem(icon: Icon(Icons.home, size: 28), label: 'Home'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home, size: 28),
+            label: 'Home',
+          ),
           // 4. Search
-          BottomNavigationBarItem(icon: Icon(Icons.search, size: 28), label: 'Search'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.search, size: 28),
+            label: 'Search',
+          ),
           // 5. Settings
-          BottomNavigationBarItem(icon: Icon(Icons.settings_outlined, size: 28), label: 'Settings'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings_outlined, size: 28),
+            label: 'Settings',
+          ),
         ],
       ),
     );
   }
 }
+
 class PlaceholderScreen extends StatelessWidget {
   final String title;
   const PlaceholderScreen({super.key, required this.title});
@@ -125,7 +192,7 @@ class PlaceholderScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const SizedBox(height: 70),
-              
+
               // IKONA UMESTO KUTIJICE
               const CircleAvatar(
                 radius: 60,
@@ -136,21 +203,24 @@ class PlaceholderScreen extends StatelessWidget {
                   color: Colors.white,
                 ),
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // NASLOV (Fmaster Team)
               Text(
-                title, 
-                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)
+                title,
+                style: const TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              
+
               const SizedBox(height: 10),
               const Text(
                 "Official Organization",
                 style: TextStyle(color: Colors.grey, fontSize: 16),
               ),
-              
+
               const SizedBox(height: 40),
 
               // FIKSNE INFORMACIJE (Samo tekst)
@@ -158,7 +228,7 @@ class PlaceholderScreen extends StatelessWidget {
               _buildTeamInfo(Icons.code, "Project", "RealTalk App"),
               _buildTeamInfo(Icons.bolt, "Status", "Active"),
               _buildTeamInfo(Icons.public, "Region", "Serbia"),
-              
+
               const SizedBox(height: 50),
             ],
           ),
@@ -178,8 +248,17 @@ class PlaceholderScreen extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: const TextStyle(fontSize: 14, color: Colors.grey)),
-              Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(
+                label,
+                style: const TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
         ],

@@ -42,6 +42,7 @@ dependencies:
   awesome_notifications: ^0.10.1
   hydrated_bloc: ^10.1.1
   supabase_flutter: ^2.12.0
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:
