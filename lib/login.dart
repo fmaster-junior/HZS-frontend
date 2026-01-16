@@ -104,6 +104,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         if (value == null || value.isEmpty) {
                           return 'Please enter your email';
                         }
+                        if (!value.contains('@')) {
+                          return 'Email must contain @';
+                        }
+                        if (!value.contains('.')) {
+                          return 'Email must contain .';
+                        }
                         if (!RegExp(
                           r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
                         ).hasMatch(value)) {

@@ -25,6 +25,14 @@ class _FitnessScreenState extends State<FitnessScreen> {
   void initState() {
     super.initState();
     _loadPhysicalStats();
+    _loadWeeklyData();
+  }
+
+  Future<void> _loadWeeklyData() async {
+    final authState = context.read<AuthCubit>().state;
+    if (authState.userId != null) {
+      await context.read<AppCubit>().loadWeeklyPhysicalData(authState.userId!);
+    }
   }
 
   Future<void> _loadPhysicalStats() async {
@@ -343,41 +351,63 @@ class _FitnessScreenState extends State<FitnessScreen> {
                             ),
                           )
                         else
-                          SizedBox(
-                            height: 100,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: List.generate(7, (index) {
-                                final value = state.weeklyPhysicalData[index];
-                                return Column(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    Container(
-                                      width: 30,
-                                      height: (value / 100 * 80).clamp(5, 80),
-                                      decoration: BoxDecoration(
-                                        color: Colors.blue,
-                                        borderRadius: BorderRadius.circular(5),
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              final barWidth = (constraints.maxWidth / 7) * 0.6;
+
+                              return SizedBox(
+                                height: 100,
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: List.generate(7, (index) {
+                                    final value =
+                                        state.weeklyPhysicalData[index];
+                                    return Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 1,
+                                        ),
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.end,
+                                          children: [
+                                            Container(
+                                              width: barWidth.clamp(20, 35),
+                                              height: (value / 100 * 70).clamp(
+                                                5,
+                                                70,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.blue,
+                                                borderRadius:
+                                                    BorderRadius.circular(5),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 5),
+                                            Text(
+                                              [
+                                                'P',
+                                                'U',
+                                                'S',
+                                                'Č',
+                                                'P',
+                                                'S',
+                                                'N',
+                                              ][index],
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 5),
-                                    Text(
-                                      [
-                                        'P',
-                                        'U',
-                                        'S',
-                                        'Č',
-                                        'P',
-                                        'S',
-                                        'N',
-                                      ][index],
-                                      style: const TextStyle(fontSize: 12),
-                                    ),
-                                  ],
-                                );
-                              }),
-                            ),
+                                    );
+                                  }),
+                                ),
+                              );
+                            },
                           ),
                       ],
                     ),

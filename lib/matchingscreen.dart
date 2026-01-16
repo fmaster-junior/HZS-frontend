@@ -196,177 +196,214 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
               ),
             )
-          : _buildUserCard(),
+          : LayoutBuilder(
+              builder: (context, constraints) {
+                final isSmallScreen = constraints.maxWidth < 400;
+                return _buildUserCard(constraints, isSmallScreen);
+              },
+            ),
     );
   }
 
-  Widget _buildUserCard() {
+  Widget _buildUserCard(BoxConstraints constraints, bool isSmallScreen) {
     final user = matchingUsers[currentUserIndex];
     final String name = user['full_name'] ?? user['username'] ?? "Korisnik";
     final int streak = user['streak'] ?? 0;
     final double? mood = (user['average_mood'] as num?)?.toDouble();
     final double? physical = (user['average_physical'] as num?)?.toDouble();
     final String? bio = user['bio'];
+    final horizontalPadding = isSmallScreen ? 16.0 : 20.0;
+    final fontSize = isSmallScreen ? 16.0 : 18.0;
+    final buttonSpacing = isSmallScreen ? 10.0 : 15.0;
+    final verticalPadding = isSmallScreen ? 12.0 : 15.0;
 
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        children: [
-          // User indicator
-          Text(
-            "Korisnik ${currentUserIndex + 1} od ${matchingUsers.length}",
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[700],
-              fontWeight: FontWeight.w500,
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.all(horizontalPadding),
+        child: Column(
+          children: [
+            // Scrollable content area
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    // User indicator
+                    Text(
+                      "Korisnik ${currentUserIndex + 1} od ${matchingUsers.length}",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[700],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Profile Picture
+                    CircleAvatar(
+                      radius: isSmallScreen ? 50 : 60,
+                      backgroundColor: Colors.black,
+                      child: CircleAvatar(
+                        radius: isSmallScreen ? 48 : 58,
+                        backgroundColor: Colors.white,
+                        child: Icon(
+                          Icons.person,
+                          size: isSmallScreen ? 60 : 80,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Name
+                    Text(
+                      name,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 20 : 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+
+                    // Bio
+                    if (bio != null && bio.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[400],
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          bio,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                    ],
+
+                    SizedBox(height: isSmallScreen ? 20 : 30),
+
+                    // Stats Row
+                    Row(
+                      children: [
+                        _buildStatusCard(
+                          "Raspoloženje",
+                          _getMoodIcon(mood),
+                          _getMoodText(mood),
+                          isSmallScreen: isSmallScreen,
+                        ),
+                        SizedBox(width: isSmallScreen ? 10 : 15),
+                        _buildStatusCard(
+                          "Niz dana",
+                          Icons.local_fire_department,
+                          streak.toString(),
+                          subtitle: streak > 0 ? "🔥" : "",
+                          isSmallScreen: isSmallScreen,
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 15),
+
+                    // Physical Activity Card
+                    if (physical != null && physical > 0)
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.all(isSmallScreen ? 15 : 20),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[400],
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Column(
+                          children: [
+                            const Text(
+                              "Fizička aktivnost",
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                            const SizedBox(height: 10),
+                            Icon(
+                              Icons.fitness_center,
+                              size: isSmallScreen ? 30 : 40,
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              "${(physical * 25).toStringAsFixed(0)}/100",
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
 
-          // Profile Picture
-          const CircleAvatar(
-            radius: 60,
-            backgroundColor: Colors.black,
-            child: CircleAvatar(
-              radius: 58,
-              backgroundColor: Colors.white,
-              child: Icon(Icons.person, size: 80, color: Colors.black),
-            ),
-          ),
-          const SizedBox(height: 10),
-
-          // Name
-          Text(
-            name,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-
-          // Bio
-          if (bio != null && bio.isNotEmpty) ...[
+            // Fixed Action Buttons at bottom
             const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.grey[400],
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                bio,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontStyle: FontStyle.italic,
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: _sendInvite,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(vertical: verticalPadding),
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            "Pozovi",
+                            style: TextStyle(
+                              fontSize: fontSize,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+                SizedBox(width: buttonSpacing),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: _nextUser,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(vertical: verticalPadding),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[400],
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            "Sledeći",
+                            style: TextStyle(
+                              fontSize: fontSize,
+                              color: Colors.black54,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
+            const SizedBox(height: 10),
           ],
-
-          const SizedBox(height: 30),
-
-          // Stats Row
-          Row(
-            children: [
-              _buildStatusCard(
-                "Raspoloženje",
-                _getMoodIcon(mood),
-                _getMoodText(mood),
-              ),
-              const SizedBox(width: 15),
-              _buildStatusCard(
-                "Niz dana",
-                Icons.local_fire_department,
-                streak.toString(),
-                subtitle: streak > 0 ? "🔥" : "",
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 15),
-
-          // Physical Activity Card
-          if (physical != null && physical > 0)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.grey[400],
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                children: [
-                  const Text(
-                    "Fizička aktivnost",
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                  const SizedBox(height: 10),
-                  const Icon(Icons.fitness_center, size: 40),
-                  const SizedBox(height: 10),
-                  Text(
-                    "${(physical * 25).toStringAsFixed(0)}/100",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-          const Spacer(),
-
-          // Action Buttons
-          Row(
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: _sendInvite,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    decoration: BoxDecoration(
-                      color: Colors.black,
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        "Pozovi",
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 15),
-              Expanded(
-                child: GestureDetector(
-                  onTap: _nextUser,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[400],
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        "Sledeći",
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.black54,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-        ],
+        ),
       ),
     );
   }
@@ -376,23 +413,33 @@ class _SearchScreenState extends State<SearchScreen> {
     IconData icon,
     String value, {
     String? subtitle,
+    bool isSmallScreen = false,
   }) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(isSmallScreen ? 15 : 20),
         decoration: BoxDecoration(
           color: Colors.grey[400],
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
           children: [
-            Text(title, style: const TextStyle(color: Colors.grey)),
-            const SizedBox(height: 10),
-            Icon(icon, size: 60),
-            const SizedBox(height: 10),
+            Text(
+              title,
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: isSmallScreen ? 12 : 14,
+              ),
+            ),
+            SizedBox(height: isSmallScreen ? 5 : 10),
+            Icon(icon, size: isSmallScreen ? 40 : 60),
+            SizedBox(height: isSmallScreen ? 5 : 10),
             Text(
               value,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: isSmallScreen ? 14 : 18,
+              ),
             ),
             if (subtitle != null && subtitle.isNotEmpty)
               Text(

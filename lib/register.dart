@@ -129,6 +129,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         if (value.length < 2) {
                           return 'Name must be at least 2 characters';
                         }
+                        if (RegExp(r'\d').hasMatch(value)) {
+                          return 'Username cannot contain numbers';
+                        }
                         return null;
                       },
                     ),
@@ -162,6 +165,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter your email';
+                        }
+                        if (!value.contains('@')) {
+                          return 'Email must contain @';
+                        }
+                        if (!value.contains('.')) {
+                          return 'Email must contain .';
                         }
                         if (!RegExp(
                           r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
