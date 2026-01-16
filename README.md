@@ -1,16 +1,11 @@
-# frontendapp
+## RealTalk
 
-A new Flutter project.
+Mobilna aplikacija RealTalk je razvijena sa ciljem unapređivanja i održavanja korisničkog mentalnog i fizičkog well-beinga kako bi pružili podršku u svakodnevnom radu na sebi, praćenju navika, aktivnosti i ličnog napretka. Glavna ideja aplikacije RealTalk jeste motivacija i pružanje prvog koraka u napretku. Aplikacija podstiče korisnika da bude svesniji o svom zdravlju, stiče pozitivne rutine i pomaže ljudima u socijalizovanju. RealTalk će korisnicima pomoći u praćenju napretka, i da ostanu istrajni u postizanju boljeg kvaliteta života, uz pomoć jednostavnog interfejsa.
 
-## Getting Started
+## Nas tim
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### Fmaster
+- Dušan Vereb
+- Marko Ramičić
+- Miloš Vuksan
+- Aleksandar Ostojić
