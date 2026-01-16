@@ -457,4 +457,22 @@ class DataRepository {
       rethrow;
     }
   }
+
+  // Delete user account
+  Future<void> deleteUserAccount(String userId) async {
+    try {
+      // Delete user's profile from the profiles table
+      // The database should have CASCADE DELETE set up for related logs and notifications
+      // If not, you may need to delete those manually first
+      await supabase
+          .from('profiles')
+          .delete()
+          .eq('id', userId);
+      
+      print('User profile deleted successfully');
+    } catch (e) {
+      print('Error deleting user account: $e');
+      rethrow;
+    }
+  }
 }

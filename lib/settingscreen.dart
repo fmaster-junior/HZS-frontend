@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'editprofilescreen.dart';
+import 'auth.dart';
+import 'datarepo.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -9,6 +14,8 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _isDarkMode = false; // Lokalno stanje za toggle
+  final _dataRepo = DataRepository();
+  final _supabase = Supabase.instance.client;
 
   @override
   Widget build(BuildContext context) {
@@ -61,13 +68,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               icon: Icons.person_outline,
               title: "Edit Profile",
               onTap: () {
-                // Ovde ide tvoja navigacija za Edit Profile
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const EditProfileScreen(),
+                  ),
+                );
               },
-            ),
-            _buildSettingTile(
-              icon: Icons.lock_outline,
-              title: "Change Password",
-              onTap: () {},
             ),
 
             const SizedBox(height: 30),
@@ -133,6 +140,68 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  // Method to delete user account
+  Future<void> _deleteAccount() async {
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) return;
+
+      // Show loading indicator
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => Center(
+            child: CircularProgressIndicator(
+              color: _isDarkMode ? Colors.white : Colors.black,
+            ),
+          ),
+        );
+      }
+
+      // Delete user profile from Supabase
+      await _dataRepo.deleteUserAccount(user.id);
+
+      // Sign out the user
+      if (mounted) {
+        await context.read<AuthCubit>().signOut();
+      }
+
+      // Close loading dialog and navigate to login
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    } catch (e) {
+      // Close loading dialog
+      if (mounted) {
+        Navigator.pop(context);
+      }
+
+      // Show error dialog
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: _isDarkMode ? Colors.grey[900] : Colors.white,
+            title: const Text("Error", style: TextStyle(color: Colors.red)),
+            content: Text(
+              "Failed to delete account: $e",
+              style: TextStyle(
+                color: _isDarkMode ? Colors.white70 : Colors.black87,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("OK"),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+  }
+
   // DIJALOG ZA POTVRDU BRISANJA
   void _showDeleteDialog(BuildContext context) {
     showDialog(
@@ -150,9 +219,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: const Text("Cancel"),
           ),
           TextButton(
-            onPressed: () {
-              // OVDE POZOVI SVOJ DATA REPO ZA BRISANJE
-              // Navigator.pop(context);
+            onPressed: () async {
+              Navigator.pop(context); // Close dialog
+              await _deleteAccount();
             },
             child: const Text("Delete", style: TextStyle(color: Colors.red)),
           ),
